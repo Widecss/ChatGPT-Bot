@@ -65,7 +65,7 @@ class ChatGPT:
 
     @staticmethod
     async def chat(session: Session, message: str) -> str:
-        print("User: " + message)
+        print("--[User]: " + message)
         session.add_user_message(message)
 
         response = await openai.ChatCompletion.acreate(
@@ -82,7 +82,7 @@ class ChatGPT:
             result.append(obj["message"]["content"])
 
         ans = "\n".join(result).strip()
-        print("AI:" + ans)
-        print("Tokens:" + str(session.total_tokens))
+        print("[AI]:" + ans)
+        print("[Tokens]:" + str(session.total_tokens))
         session.add_assistant_message(ans)
         return ans

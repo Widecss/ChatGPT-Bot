@@ -77,8 +77,8 @@ class Client:
         # 重置指令
         if message == "重置":
             del self.chat_sessions[user_id]
-            print("对话已重置: " + str(user_id))
-            return await self.send_message("本次对话已重置", user_id, group_id)
+            print("*对话已重置: " + str(user_id))
+            return await self.send_message("【本次对话已重置】", user_id, group_id)
 
         # 如果不是第一次对话
         if user_id in self.chat_sessions.keys():
@@ -89,15 +89,18 @@ class Client:
             # 如果对话已经超出了限制
             if session.is_max_tokens():
                 del self.chat_sessions[user_id]
-                print("已超过允许的最大对话内容，对话已重置: " + str(user_id))
-                return await self.send_message("已超过允许的最大对话内容，本次对话已重置", user_id, group_id)
+                print("*已超过允许的最大对话内容，对话已重置: " + str(user_id))
+                return await self.send_message("【已超过允许的最大对话内容，本次对话已重置】", user_id, group_id)
         # 第一次对话
         else:
             session = api.create_session(user_id, group_id)
             self.chat_sessions[user_id] = session
 
-        response = await api.chat(session, message)
-        await self.send_message(response, user_id, group_id)
+        try:
+            response = await api.chat(session, message)
+            await self.send_message(response, user_id, group_id)
+        except Exception as e:
+            await self.send_message(f"【与服务器通信出现异常，请重试：{e}】", user_id, group_id)
 
     async def check_heartbeat_loop(self):
         # 还没写完
@@ -110,7 +113,7 @@ class Client:
                 value: Session
                 if value.is_out_date():
                     del self.chat_sessions[key]
-                    print("太久没回复，已关闭对话: " + str(value.user_id))
+                    print("*太久没回复，已关闭对话: " + str(value.user_id))
                     await self.session_out_date(value)
             await asyncio.sleep(10)
 
@@ -118,7 +121,7 @@ class Client:
         if self.client is None:
             return
 
-        await self.send_message("太久没回复，已关闭本次对话", session.user_id, session.group_id)
+        await self.send_message("【太久没回复，已关闭本次对话】", session.user_id, session.group_id)
 
     async def loop_connect(self, api: ChatGPT, session: ClientSession):
         async with session.ws_connect(ServerURL) as client:
