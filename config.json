@@ -1,0 +1,14 @@
+{
+    "qq": {
+        "self_id": -1,
+        "ws_server_url": "ws://ip:port"
+    },
+    "chatgpt": {
+        "organization": "",
+        "api_key": "",
+        "proxy": "",
+        "model_id": "gpt-3.5-turbo",
+        "max_tokens": 4096,
+        "session_timeout": 300
+    }
+}
