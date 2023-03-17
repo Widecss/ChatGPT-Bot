@@ -76,6 +76,8 @@ class Client:
 
         # 重置指令
         if message == "重置":
+            if user_id not in self.chat_sessions.keys():
+                return await self.send_message("【你还没有开始对话呢...】", user_id, group_id)
             del self.chat_sessions[user_id]
             print("*对话已重置: " + str(user_id))
             return await self.send_message("【本次对话已重置】", user_id, group_id)
