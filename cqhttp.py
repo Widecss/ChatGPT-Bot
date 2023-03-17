@@ -83,6 +83,8 @@ class Client:
         # 如果不是第一次对话
         if user_id in self.chat_sessions.keys():
             session = self.chat_sessions[user_id]
+            session.user_id = user_id
+            session.group_id = group_id
 
             # 如果对话已经超出了限制
             if session.is_max_tokens():
