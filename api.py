@@ -29,6 +29,7 @@ class Session:
         ]
         self.last_chat_time = time.time()
         self.total_tokens = 0
+        self.locking = False
 
         self.user_id = user_id
         self.group_id = group_id
@@ -44,10 +45,17 @@ class Session:
         self.current_assistant_message = self.to_message(Role.ASSISTANT, message)
         return self
 
-    def done(self):
+    def start(self) -> "Session":
+        self.locking = True
+        return self
+
+    def done(self) -> "Session":
         self.prompt.append(self.current_user_message)
         self.prompt.append(self.current_assistant_message)
+
+        self.locking = False
         self.last_chat_time = time.time()
+        return self
 
     def rollback(self):
         self.current_user_message = None
@@ -59,6 +67,9 @@ class Session:
     def is_out_date(self):
         if Timeout < 0:
             return False
+        if self.locking:
+            return False
+
         return time.time() - self.last_chat_time > Timeout
 
     def is_max_tokens(self):
@@ -83,6 +94,8 @@ class ChatGPT:
     @staticmethod
     async def chat(session: Session, message: str) -> str:
         print("--[User]: " + message)
+
+        session.start()
         session.set_user_message(message)
 
         try:
@@ -106,5 +119,6 @@ class ChatGPT:
         print("[AI]:" + ans)
         print("[Tokens]:" + str(session.total_tokens))
 
-        session.set_assistant_message(ans).done()
+        session.set_assistant_message(ans)
+        session.done()
         return ans

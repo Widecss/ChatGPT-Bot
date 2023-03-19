@@ -9,6 +9,6 @@
         "proxy": "",
         "model_id": "gpt-3.5-turbo",
         "max_tokens": 4096,
-        "session_timeout": 300
+        "session_timeout": 600
     }
 }
