@@ -29,15 +29,32 @@ class Session:
         ]
         self.last_chat_time = time.time()
         self.total_tokens = 0
+
         self.user_id = user_id
         self.group_id = group_id
 
-    def add_user_message(self, message):
-        self.prompt.append(self.to_message(Role.USER, message))
+        self.current_user_message = None
+        self.current_assistant_message = None
 
-    def add_assistant_message(self, message):
-        self.prompt.append(self.to_message(Role.ASSISTANT, message))
+    def set_user_message(self, message) -> "Session":
+        self.current_user_message = self.to_message(Role.USER, message)
+        return self
+
+    def set_assistant_message(self, message) -> "Session":
+        self.current_assistant_message = self.to_message(Role.ASSISTANT, message)
+        return self
+
+    def done(self):
+        self.prompt.append(self.current_user_message)
+        self.prompt.append(self.current_assistant_message)
         self.last_chat_time = time.time()
+
+    def rollback(self):
+        self.current_user_message = None
+        self.current_assistant_message = None
+
+    def get_messages(self):
+        return self.prompt + [self.current_user_message]
 
     def is_out_date(self):
         if Timeout < 0:
@@ -66,12 +83,16 @@ class ChatGPT:
     @staticmethod
     async def chat(session: Session, message: str) -> str:
         print("--[User]: " + message)
-        session.add_user_message(message)
+        session.set_user_message(message)
 
-        response = await openai.ChatCompletion.acreate(
-            model=ModelID,
-            messages=session.prompt
-        )
+        try:
+            response = await openai.ChatCompletion.acreate(
+                model=ModelID,
+                messages=session.get_messages()
+            )
+        except Exception:
+            session.rollback()
+            raise
 
         session.total_tokens = response["usage"]["total_tokens"]
         choices: list = response["choices"]
@@ -84,5 +105,6 @@ class ChatGPT:
         ans = "\n".join(result).strip()
         print("[AI]:" + ans)
         print("[Tokens]:" + str(session.total_tokens))
-        session.add_assistant_message(ans)
+
+        session.set_assistant_message(ans).done()
         return ans
