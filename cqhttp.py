@@ -96,26 +96,27 @@ class Client(Requester):
         try:
             session = await self.get_session(group_id, user_id, api)
             response = await api.chat(session, message)
-            self.chat_sessions[user_id] = session
             await self.send_message(response, user_id, group_id)
+
+            # 最大时清空
+            if session.is_max_tokens():
+                if user_id in self.chat_sessions.keys():
+                    del self.chat_sessions[user_id]
+
+                print("*已超过允许的最大对话内容，对话已重置: " + str(user_id))
+                await self.send_message("【已超过允许的最大对话内容，本次对话已重置】", user_id, group_id)
+            # 存储
+            else:
+                self.chat_sessions[user_id] = session
         except Exception as e:
             await self.send_message(f"【与服务器通信出现异常，请重试：{e}】", user_id, group_id)
 
     async def get_session(self, group_id, user_id, api):
         # 如果不是第一次对话
-        session = None
         if user_id in self.chat_sessions.keys():
             session = self.chat_sessions[user_id]
-
-            if session.is_max_tokens():
-                session = None
-                del self.chat_sessions[user_id]
-
-                print("*已超过允许的最大对话内容，对话已重置: " + str(user_id))
-                await self.send_message("【已超过允许的最大对话内容，本次对话已重置】", user_id, group_id)
-
         # 第一次对话
-        if session is None:
+        else:
             session = api.create_session(user_id, group_id)
 
         session.user_id = user_id
