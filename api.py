@@ -29,13 +29,31 @@ class Session:
         ]
         self.last_chat_time = time.time()
         self.total_tokens = 0
-        self.locking = False
+        self.last_total_tokens = 0
 
         self.user_id = user_id
         self.group_id = group_id
 
         self.current_user_message = None
         self.current_assistant_message = None
+
+        self.is_rollback = False
+        self.locking = False
+
+    def rollback(self):
+        if self.is_rollback:
+            return False
+
+        self.total_tokens = self.last_total_tokens
+        self.is_rollback = True
+
+        self.prompt.pop()
+        self.prompt.pop()
+        return True
+
+    def set_total_tokens(self, tokens):
+        self.last_total_tokens = self.total_tokens
+        self.total_tokens = tokens
 
     def set_user_message(self, message) -> "Session":
         self.current_user_message = self.to_message(Role.USER, message)
@@ -47,6 +65,7 @@ class Session:
 
     def start(self) -> "Session":
         self.locking = True
+        self.last_chat_time = time.time()
         return self
 
     def done(self) -> "Session":
@@ -54,10 +73,10 @@ class Session:
         self.prompt.append(self.current_assistant_message)
 
         self.locking = False
-        self.last_chat_time = time.time()
+        self.is_rollback = False
         return self
 
-    def rollback(self):
+    def clear_this(self):
         self.current_user_message = None
         self.current_assistant_message = None
 
@@ -104,7 +123,7 @@ class ChatGPT:
                 messages=session.get_messages()
             )
         except Exception:
-            session.rollback()
+            session.clear_this()
             raise
 
         session.total_tokens = response["usage"]["total_tokens"]
