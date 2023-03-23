@@ -6,13 +6,15 @@ import json
 
 import cqhttp
 import api
+import cqutil
 
 
 def read_config():
     with open("./config.json", encoding="utf-8") as file:
         config = json.load(file)
 
-    cqhttp.SelfID = config["qq"]["self_id"]
+    cqutil.SelfID = config["qq"]["self_id"]
+
     cqhttp.ServerURL = config["qq"]["ws_server_url"]
 
     api.Organization = config["chatgpt"]["organization"]

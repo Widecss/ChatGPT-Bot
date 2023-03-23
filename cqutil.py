@@ -15,7 +15,12 @@ def get_group_id(data: dict):
 
 
 def get_message_without_at_and_whitespace(data: dict):
-    return data.get("message", "").removeprefix(at_me()).strip()
+    _message = data.get("message", "")
+    _prefix = at_me()
+
+    if _message.startswith(_prefix):
+        _message = _message[len(_prefix):]
+    return _message.strip()
 
 
 def at(user_id):
@@ -52,7 +57,7 @@ def to_response(message: str, user_id: int, group_id: int):
 
     params = {
         "group_id": group_id,
-        "message": f"{at(user_id)} {message}"
+        "message": f"{at(user_id)}{message}"
     } if group_id else {
         "user_id": user_id,
         "message": message
