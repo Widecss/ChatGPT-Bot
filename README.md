@@ -33,7 +33,10 @@
         "max_tokens": 4096,
 
         # 当用户多久不使用自动清空重置会话，单位秒，负数时关闭此功能
-        "session_timeout": 300
+        "session_timeout": 300,
+
+        # 使用 requests，详细说明见其他
+        "use_requests": false
     }
 }
 ```
@@ -45,5 +48,10 @@
 - 使用 **@Bot 重置** 手动重置自己的对话
 - TODO
 
-## 其他
 如果有问题可以在 issue 中提出。
+
+## 已知问题
+- **aiohttp** 库会在某些内地网络或者接入代理的时候出现证书异常，此时可在配置文件中打开 **use_requests** 设置以使用 **requests** 库。这里并不建议使用关闭证书验证这种摒弃安全性的方式，而且在实际使用中，回应瓶颈大部分在等待模型计算并回应，与网络延迟关系不大
+~~~
+aiohttp.client_exceptions.ClientConnectorCertificateError: Cannot connect to host api.openai.com:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:997)')]
+~~~

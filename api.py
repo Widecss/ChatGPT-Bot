@@ -1,7 +1,9 @@
 """
 
 """
+import asyncio
 import time
+from functools import partial
 
 import openai
 
@@ -14,11 +16,18 @@ ModelID = ""
 Timeout = 60 * 5
 MaxTokens = -1
 
+UseRequests = False
+
 
 class Role:
     ASSISTANT = "assistant"
     SYSTEM = "system"
     USER = "user"
+
+
+async def async_run_until_complete(sync_func, *args, **kwargs):
+    """将同步函数运行在异步线程池中"""
+    return await asyncio.get_event_loop().run_in_executor(None, partial(sync_func, *args, **kwargs))
 
 
 class Session:
@@ -110,18 +119,14 @@ class ChatGPT:
     def create_session(user_id, group_id) -> Session:
         return Session(user_id, group_id)
 
-    @staticmethod
-    async def chat(session: Session, message: str) -> str:
+    async def chat(self, session: Session, message: str) -> str:
         print("--[User]: " + message)
 
         session.start()
         session.set_user_message(message)
 
         try:
-            response = await openai.ChatCompletion.acreate(
-                model=ModelID,
-                messages=session.get_messages()
-            )
+            response = await self.chat_raw(session.get_messages())
         except Exception:
             session.clear_this()
             raise
@@ -141,3 +146,17 @@ class ChatGPT:
         session.set_assistant_message(ans)
         session.done()
         return ans
+
+    @staticmethod
+    async def chat_raw(messages):
+        if UseRequests:
+            return await async_run_until_complete(
+                openai.ChatCompletion.create,
+                model=ModelID,
+                messages=messages
+            )
+        else:
+            return await openai.ChatCompletion.acreate(
+                model=ModelID,
+                messages=messages
+            )
