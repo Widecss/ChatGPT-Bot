@@ -109,8 +109,8 @@ class Client(Requester):
             else:
                 self.chat_sessions[user_id] = session
         except Exception as e:
-            await self.send_message(f"【与服务器通信出现异常，请重试：{e}】", user_id, group_id)
             traceback.print_exc()
+            await self.send_message(f"【与服务器通信出现异常，请重试：{e}】", user_id, group_id)
 
     async def get_session(self, group_id, user_id, api):
         # 如果不是第一次对话
