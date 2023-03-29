@@ -18,6 +18,8 @@ class Requester:
         self.heartbeat_time = -1
         self.client = None
 
+        self.user_locks = {}
+
     async def check_heartbeat_loop(self):
         # 还没写完
         if time.time() - self.heartbeat_time > 300 and self.client is not None:
@@ -32,17 +34,30 @@ class Requester:
         data = cqutil.to_response(message, user_id, group_id)
         await self.client.send_json(data)
 
+    async def start_handle(self, data, api):
+        user_id = cqutil.get_user_id(data)
+
+        if user_id in self.user_locks.keys():
+            lock = self.user_locks[user_id]
+        else:
+            lock = asyncio.Lock()
+        self.user_locks[user_id] = lock
+
+        async with lock:
+            await self.on_handle(data, api)
+
     async def loop_connect(self, api: ChatGPT, session: ClientSession):
         async with session.ws_connect(ServerURL) as client:
             self.client = client
             async for msg in client:
                 msg: WSMessage
                 data = msg.json()
-                if data.get("meta_event_type", None) == "heartbeat":
+                if cqutil.is_heartbeat(data):
                     self.heartbeat_time = data["time"]
                     continue
-
-                await self.on_handle(data, api)
+                if not cqutil.is_message(data):
+                    continue
+                asyncio.create_task(self.start_handle(data, api))
             self.client = None
 
     async def loop(self, api: ChatGPT):

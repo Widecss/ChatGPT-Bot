@@ -35,6 +35,14 @@ def is_at(data: dict):
     return data.get("message", "").startswith(at_me())
 
 
+def is_heartbeat(data: dict):
+    return data.get("meta_event_type", None) == "heartbeat"
+
+
+def is_message(data: dict):
+    return data.get("post_type", None) == "message"
+
+
 def is_private_message(data: dict):
     return data.get("message_type", None) == "private"
 
